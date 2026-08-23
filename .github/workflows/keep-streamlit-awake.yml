@@ -1,0 +1,39 @@
+name: Keep Streamlit app awake
+
+on:
+  schedule:
+    # Streamlit Community Cloud sleeps after 12 hours without traffic.
+    # Run away from the top of the hour to reduce GitHub Actions queue delays.
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-streamlit-awake
+  cancel-in-progress: true
+
+env:
+  APP_URL: https://ops-dashboard-portfolio.streamlit.app/
+
+jobs:
+  visit-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Visit the public Streamlit app
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          status_code="$(
+            curl               --location               --silent               --show-error               --output /dev/null               --write-out "%{http_code}"               --retry 3               --retry-all-errors               --connect-timeout 15               --max-time 90               --user-agent "Mozilla/5.0 (compatible; OPSDashboardKeepAlive/1.0)"               "$APP_URL"
+          )"
+
+          if (( status_code < 200 || status_code >= 400 )); then
+            echo "Streamlit app returned HTTP $status_code"
+            exit 1
+          fi
+
+          echo "Streamlit app responded with HTTP $status_code"

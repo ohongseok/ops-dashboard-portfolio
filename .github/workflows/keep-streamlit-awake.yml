@@ -3,37 +3,39 @@ name: Keep Streamlit app awake
 on:
   schedule:
     # Streamlit Community Cloud sleeps after 12 hours without traffic.
-    # Run away from the top of the hour to reduce GitHub Actions queue delays.
+    # A six-hour interval leaves room for occasional GitHub schedule delays.
     - cron: "23 */6 * * *"
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/keep-streamlit-awake.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: keep-streamlit-awake
-  cancel-in-progress: true
-
-env:
-  APP_URL: https://ops-dashboard-portfolio.streamlit.app/
+  cancel-in-progress: false
 
 jobs:
-  visit-app:
+  reset-inactivity-timer:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Visit the public Streamlit app
+      - name: Check app health
         shell: bash
         run: |
-          set -euo pipefail
+          curl             --fail             --silent             --show-error             --retry 3             --retry-all-errors             --connect-timeout 15             --max-time 60             https://ops-dashboard-portfolio.streamlit.app/healthz
 
-          status_code="$(
-            curl               --location               --silent               --show-error               --output /dev/null               --write-out "%{http_code}"               --retry 3               --retry-all-errors               --connect-timeout 15               --max-time 90               --user-agent "Mozilla/5.0 (compatible; OPSDashboardKeepAlive/1.0)"               "$APP_URL"
-          )"
+      - name: Check out the deployment branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
 
-          if (( status_code < 200 || status_code >= 400 )); then
-            echo "Streamlit app returned HTTP $status_code"
-            exit 1
-          fi
-
-          echo "Streamlit app responded with HTTP $status_code"
+      - name: Create an empty keep-awake commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty --message "chore: reset Streamlit inactivity timer [skip ci]"
+          git push origin HEAD:main

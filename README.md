@@ -19,6 +19,6 @@ python -m streamlit run app.py
 
 ## Streamlit 휴면 방지
 
-GitHub Actions의 `.github/workflows/keep-streamlit-awake.yml`이 6시간마다 공개 앱 URL을 방문합니다. 필요할 때는 GitHub의 **Actions → Keep Streamlit app awake → Run workflow**에서 수동 실행할 수 있습니다.
+GitHub Actions의 `.github/workflows/keep-streamlit-awake.yml`이 6시간마다 앱 상태를 확인하고 배포 브랜치에 내용 변경 없는 빈 커밋을 추가합니다. 이 커밋이 Streamlit Community Cloud의 무활동 시간을 재설정합니다.
 
-Streamlit Community Cloud는 트래픽이 12시간 없으면 앱을 휴면 처리합니다. 또한 GitHub는 공개 저장소에 60일간 활동이 없으면 예약 워크플로를 자동 중지할 수 있으므로, 장기간 저장소를 수정하지 않았다면 Actions 화면에서 워크플로 활성 상태를 확인해야 합니다.
+필요할 때는 GitHub의 **Actions → Keep Streamlit app awake → Run workflow**에서 수동 실행할 수 있습니다. 자동 커밋 메시지는 `chore: reset Streamlit inactivity timer [skip ci]`입니다.

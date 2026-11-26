@@ -56,9 +56,11 @@ jobs:
                                   r"Yes, get this app back up|Wake.*app|Wake up", re.I))
                               if wake.count() and wake.first.is_visible():
                                   wake.first.click(timeout=10000)
-                              metrics = page.locator('[data-testid="stMetricValue"]')
-                              if metrics.count() and metrics.first.is_visible():
-                                  if page.locator('[data-testid="stException"]').count():
+                              app_frame = next((frame for frame in page.frames
+                                  if frame.locator('[data-testid="stMetricValue"]').count()
+                                  and frame.locator('[data-testid="stMetricValue"]').first.is_visible()), None)
+                              if app_frame is not None:
+                                  if app_frame.locator('[data-testid="stException"]').count():
                                       raise RuntimeError("Streamlit app reports an exception")
                                   page.wait_for_timeout(15000)
                                   page.screenshot(path="availability/dashboard.png", full_page=True)
